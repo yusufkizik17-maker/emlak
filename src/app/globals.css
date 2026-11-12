@@ -1,0 +1,88 @@
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #f8f9fd;
+  --foreground: #14203b;
+  --card: #ffffff;
+  --primary: #6543d5;
+  --primary-foreground: #ffffff;
+  --secondary: #f0eef9;
+  --secondary-foreground: #30274d;
+  --muted-foreground: #5c6578;
+  --accent: #eae5fa;
+  --accent-foreground: #342162;
+  --border: #e1e4ee;
+  --input: #e1e4ee;
+  --ring: #8062df;
+  --destructive: #b3263c;
+}
+.dark {
+  --background: #0c1221;
+  --foreground: #edf0fc;
+  --card: #141e32;
+  --primary: #ad97ff;
+  --primary-foreground: #21113d;
+  --secondary: #202940;
+  --secondary-foreground: #e5dffa;
+  --muted-foreground: #a8b3c9;
+  --accent: #2d2a4c;
+  --accent-foreground: #eee8ff;
+  --border: #303a51;
+  --input: #303a51;
+  --ring: #ad97ff;
+  --destructive: #ff8898;
+}
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --font-sans: Arial, Helvetica, sans-serif;
+}
+* {
+  border-color: var(--border);
+}
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 4px;
+}
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    transition: none !important;
+  }
+}
+button,
+a,
+input[type="checkbox"],
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+button:not(:disabled),
+select {
+  cursor: pointer;
+}
+textarea {
+  resize: vertical;
+}
