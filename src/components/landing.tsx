@@ -70,7 +70,7 @@ export function Landing({ mode }: { mode: "demo" | "live" }) {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg">
-                <Link href={mode === "demo" ? "/dashboard" : "/register"}>
+                <Link href={mode === "demo" ? "/inbox" : "/register"}>
                   {mode === "demo" ? t.tryDemo : t.register}
                   <ArrowRight className="size-4" />
                 </Link>
@@ -89,7 +89,7 @@ export function Landing({ mode }: { mode: "demo" | "live" }) {
                   : "Secure workspace · Human-reviewed AI"}
             </p>
           </div>
-          <div className="overflow-hidden rounded-2xl border bg-card shadow-xl shadow-primary/10">
+          <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
             <div className="flex items-center justify-between border-b p-5">
               <p className="text-sm font-semibold">
                 Nova Emlak{" "}
@@ -170,7 +170,7 @@ export function Landing({ mode }: { mode: "demo" | "live" }) {
               return (
                 <article
                   key={String(title)}
-                  className="rounded-2xl border bg-card p-6"
+                  className="rounded-lg border bg-card p-6"
                 >
                   <I className="mb-6 size-6 text-primary" />
                   <h3 className="font-semibold">{String(title)}</h3>
@@ -184,7 +184,7 @@ export function Landing({ mode }: { mode: "demo" | "live" }) {
         </section>
         <section
           id="how"
-          className="scroll-mt-8 rounded-2xl border bg-card p-8 sm:p-10"
+          className="scroll-mt-8 rounded-lg border bg-card p-8 sm:p-10"
         >
           <h2 className="text-3xl font-semibold tracking-tight">{t.how}</h2>
           <div className="mt-8 grid gap-8 md:grid-cols-3">
@@ -245,7 +245,7 @@ export function Landing({ mode }: { mode: "demo" | "live" }) {
             {["Starter", "Growth", "Business"].map((plan, i) => (
               <article
                 key={plan}
-                className={`rounded-2xl border bg-card p-7 ${i === 1 ? "ring-2 ring-primary" : ""}`}
+                className={`rounded-lg border bg-card p-7 ${i === 1 ? "ring-2 ring-primary" : ""}`}
               >
                 <p className="font-semibold">{plan}</p>
                 <p className="mt-5 text-2xl font-semibold">
@@ -271,7 +271,7 @@ export function Landing({ mode }: { mode: "demo" | "live" }) {
                   variant={i === 1 ? "default" : "outline"}
                   className="mt-6 w-full"
                 >
-                  <Link href={mode === "demo" ? "/dashboard" : "/register"}>
+                  <Link href={mode === "demo" ? "/inbox" : "/register"}>
                     {mode === "demo" ? t.tryDemo : t.register}
                     <ArrowUpRight className="size-4" />
                   </Link>

@@ -4,9 +4,13 @@ test("landing theme and responsive layout", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "Her müşteri talebi",
   );
-  await page.getByRole("button", { name: "Koyu temaya geç" }).click();
+  await page
+    .getByRole("combobox", { name: "Tema", exact: true })
+    .selectOption("dark");
   await expect(page.locator("html")).toHaveClass(/dark/);
-  await page.getByRole("button", { name: "Açık temaya geç" }).click();
+  await page
+    .getByRole("combobox", { name: "Tema", exact: true })
+    .selectOption("light");
   await expect(page.locator("html")).not.toHaveClass(/dark/);
   expect(
     await page.evaluate(
@@ -44,6 +48,9 @@ test("demo CRM, task and AI approval flow", async ({ page }) => {
     .getByRole("link", { name: "AI Asistan", exact: true })
     .last()
     .click();
+  await expect(page).toHaveURL(/\/inbox\?lead=/);
+  // Keep validating the preserved legacy analysis flow alongside the new Inbox tests.
+  await page.goto("/ai-assistant");
   await page
     .getByLabel("Müşteri mesajı", { exact: true })
     .fill("Kadıköy'de ev arıyorum, yardımcı olur musunuz?");
@@ -77,7 +84,9 @@ test("workspace navigation, preferences and route layouts", async ({
   const failures: string[] = [];
   page.on("pageerror", (e) => failures.push(e.message));
   await page.goto("/dashboard");
-  await expect(page.getByText("Toplam müşteri", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Bugün gelen mesajlar", { exact: true }),
+  ).toBeVisible();
   await page.screenshot({
     path: info.outputPath("dashboard.png"),
     fullPage: true,
@@ -109,6 +118,9 @@ test("workspace navigation, preferences and route layouts", async ({
     page.getByRole("heading", { level: 1, name: "Settings", exact: true }),
   ).toBeVisible();
   for (const route of [
+    "/inbox",
+    "/properties",
+    "/analytics",
     "/dashboard",
     "/leads",
     "/tasks",
@@ -139,9 +151,7 @@ test("demo mode keeps authentication local and blocks remote persistence", async
   await expect(page.getByText(/Demo modunda hesap oluşturulmaz/)).toBeVisible();
   await expect(page.getByRole("textbox")).toHaveCount(0);
   await page.getByRole("link", { name: "Demoya devam et" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "İşletmenize",
-  );
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Inbox");
   expect((await request.get("/api/workspace")).status()).toBe(409);
   expect(
     (await request.post("/api/auth", { data: { action: "logout" } })).status(),

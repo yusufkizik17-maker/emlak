@@ -12,7 +12,8 @@ OpenAI için yerleşik fetch kullanılır. PGlite yalnızca test bağımlılığ
 ## İki açık çalışma modu
 
 `APP_MODE=demo` varsayılandır. Gerçek anahtar veya kullanıcı hesabı istemez.
-Veriler `sessionStorage` içinde saklanır. Analiz sabit ve açıkça etiketli örnektir.
+Veriler `sessionStorage` içinde saklanır. Inbox analizi açıkça etiketli yerel kural
+çıkarıcısıdır; eski AI ekranının sabit örnek davranışı korunur.
 Onay ve takip görevi yerel state üzerinde çalışır. Gerçek mesaj gönderimi yoktur.
 
 `APP_MODE=live` runtime'da okunur; ekranlar statik bir demo build'ine kilitlenmez.
@@ -66,6 +67,15 @@ prosedürü olarak belgelenmiştir; bu sürüm bunları otomatik çalıştırmaz
 Vitest iş kuralları ve mocked HTTP sağlayıcı hatalarını test eder. Migration
 PGlite PostgreSQL motorunda gerçek SQL/RLS ile denenir; test `auth.users` ve
 `auth.uid()` fixture'ları Supabase servisinin yerine geçmez. Playwright demo
-üzerinde desktop/mobile kullanıcı akışlarını test eder. Gerçek Cloud Auth,
+üzerinde desktop/tablet/mobile kullanıcı akışlarını test eder. Gerçek Cloud Auth,
 SMTP ve OpenAI bağlantıları anahtar/servis ve kurucu izni olmadan çalıştırılmaz.
 Üretim yayını yapılmamıştır. Ayrıntılar: [yayın rehberi](deployment.md).
+
+## Inbox genişlemesi
+
+Yeni ana rota `/inbox`, giriş ve Auth callback hedefidir. İkinci migration ile
+konuşmalar, kayıtlı ilanlar ve mesaj yön/durum alanları eklenmiştir. Inter,
+next-themes ve Radix Dialog ortak temeli genişletir. Yeni veri akışı ve korunmuş
+özellikler [Inbox tasarım belgesinde](inbox-redesign.md) açıklanır. Copilot'ta
+bağlam sınırı 8.000 karakter, çıktı sınırı 1.600 token'dır; legacy analiz sınırları
+aynı kalır. Yeni ve eski AI uçları aynı organizasyon kotasını paylaşır.

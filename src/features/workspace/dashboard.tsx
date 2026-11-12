@@ -1,152 +1,168 @@
 "use client";
 import Link from "next/link";
-import { activityLabel } from "@/lib/activity";
+import { useState } from "react";
 import {
-  Users,
-  Inbox,
+  MessageSquare,
   Clock3,
-  CheckCircle2,
+  Sparkles,
+  Users,
+  ClipboardList,
   ArrowUpRight,
-  Plus,
 } from "lucide-react";
 import { useWorkspace } from "./provider";
 import { PageHeading } from "@/components/form-fields";
 import { Button } from "@/components/ui/button";
-import { statuses } from "@/lib/domain";
+import { activityLabel } from "@/lib/activity";
 export function Dashboard() {
-  const { data, t, language } = useWorkspace();
+  const { data, language, t, mode } = useWorkspace();
+  const tr = language === "tr";
+  const [today] = useState(() =>
+    new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" }),
+  );
   const metrics = [
-    [t.total, data.metrics?.total ?? data.leads.length, Users],
     [
-      t.fresh,
+      tr ? "Bugün gelen mesajlar" : "Incoming messages today",
+      data.communication_metrics?.today ??
+        data.messages.filter(
+          (m) =>
+            m.direction === "inbound" &&
+            new Date(m.created_at).toLocaleDateString("en-CA", {
+              timeZone: "Europe/Istanbul",
+            }) === today,
+        ).length,
+      MessageSquare,
+      "/inbox",
+    ],
+    [
+      tr ? "Yanıt bekleyen konuşmalar" : "Awaiting reply",
+      data.communication_metrics?.waiting ??
+        data.conversations.filter((c) => c.awaiting_reply && c.state === "open")
+          .length,
+      Clock3,
+      "/inbox",
+    ],
+    [
+      tr ? "AI tarafından hazırlanan taslaklar" : "AI prepared drafts",
+      data.communication_metrics?.drafts ??
+        data.conversations.filter((c) => c.analysis).length +
+          data.suggestions.length,
+      Sparkles,
+      "/inbox",
+    ],
+    [
+      tr ? "Yeni müşteri talepleri" : "New customer enquiries",
       data.metrics?.fresh ??
         data.leads.filter((l) => l.status === "new").length,
-      Inbox,
+      Users,
+      "/leads",
     ],
     [
-      t.pending,
-      data.metrics?.pending ?? data.tasks.filter((v) => !v.completed).length,
-      Clock3,
-    ],
-    [
-      t.completed,
-      data.metrics?.completed ?? data.tasks.filter((v) => v.completed).length,
-      CheckCircle2,
+      tr ? "Takip gereken müşteriler" : "Customers needing follow-up",
+      data.communication_metrics?.follow_up ??
+        new Set(
+          data.tasks
+            .filter((v) => !v.completed && v.lead_id)
+            .map((v) => v.lead_id),
+        ).size,
+      ClipboardList,
+      "/tasks",
     ],
   ] as const;
   return (
     <>
       <PageHeading
-        title={t.greeting}
-        description={t.overview}
+        title={
+          tr ? "İletişiminize genel bakış" : "Your communication at a glance"
+        }
+        description={
+          tr
+            ? "Konuşmalardan takip adımlarına. Bugün: Europe/Istanbul."
+            : "From conversations to follow-ups. Today: Europe/Istanbul."
+        }
         action={
-          <Button asChild>
-            <Link href="/leads?new=1">
-              <Plus className="size-4" />
-              {t.newLead}
+          <Button asChild size="sm">
+            <Link href="/inbox">
+              Inbox
+              <ArrowUpRight className="size-3.5" />
             </Link>
           </Button>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {metrics.map(([label, count, Icon]) => (
-          <article key={label} className="rounded-2xl border bg-card p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{label}</p>
-              <Icon className="size-5 text-primary" aria-hidden="true" />
+      {mode === "demo" && (
+        <p className="mb-5 text-xs text-muted-foreground">
+          {tr
+            ? "Demo verilerinden hesaplanır. Gerçek işletme performansı değildir."
+            : "Calculated from demo records. Not real business performance."}
+        </p>
+      )}
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {metrics.map(([label, value, Icon, href]) => (
+          <Link
+            href={href}
+            key={label}
+            className="rounded-lg border bg-card p-4 transition-colors hover:bg-secondary/40"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="min-h-8 text-[11px] leading-4 text-muted-foreground">
+                {label}
+              </p>
+              <Icon className="size-4 shrink-0 text-muted-foreground" />
             </div>
-            <p className="mt-5 text-4xl font-semibold tracking-tight">
-              {count}
+            <p className="mt-3 text-2xl font-semibold tracking-tight">
+              {value}
             </p>
-            <p className="mt-3 text-xs text-muted-foreground">
-              {data.organization.name}
-            </p>
-          </article>
+          </Link>
         ))}
       </div>
-      <div className="mt-7 grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-        <section className="rounded-2xl border bg-card p-6">
-          <h2 className="text-lg font-semibold">{t.pipeline}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {language === "tr"
-              ? "Müşterilerinizin güncel durumu"
-              : "Your current customer pipeline"}
-          </p>
-          <div className="mt-7 space-y-5">
-            {statuses.map((s) => {
-              const count = data.leads.filter((l) => l.status === s).length;
-              return (
-                <div key={s}>
-                  <div className="mb-2 flex justify-between text-sm">
-                    <span>{t[s]}</span>
-                    <span className="font-medium">{count}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-secondary">
-                    <div
-                      className="h-2 rounded-full bg-primary"
-                      style={{
-                        width: `${(count / Math.max(data.leads.length, 1)) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <section className="rounded-lg border bg-card">
+          <div className="border-b px-4 py-3 text-sm font-semibold">
+            {t.pending}
           </div>
-        </section>
-        <section className="rounded-2xl border bg-card p-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">{t.pending}</h2>
-            <Link href="/tasks" aria-label={t.tasks}>
-              <ArrowUpRight className="size-5 text-primary" />
-            </Link>
-          </div>
-          <div className="mt-5 divide-y">
+          <div className="divide-y">
             {data.tasks
               .filter((v) => !v.completed)
-              .slice(0, 5)
+              .slice(0, 6)
               .map((task) => (
-                <div key={task.id} className="flex gap-3 py-4">
-                  <Clock3 className="mt-1 size-4 shrink-0 text-primary" />
-                  <div>
-                    <Link href="/tasks" className="text-sm font-medium">
-                      {task.title}
-                    </Link>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {new Date(task.due_at).toLocaleString(
-                        language === "tr" ? "tr-TR" : "en-GB",
-                      )}
-                    </p>
-                  </div>
-                </div>
+                <Link
+                  href="/tasks"
+                  key={task.id}
+                  className="flex items-center justify-between gap-4 px-4 py-4 text-xs hover:bg-background"
+                >
+                  <span>{task.title}</span>
+                  <time className="shrink-0 text-[10px] text-muted-foreground">
+                    {new Date(task.due_at).toLocaleDateString(
+                      tr ? "tr-TR" : "en-GB",
+                    )}
+                  </time>
+                </Link>
               ))}
             {!data.tasks.some((v) => !v.completed) && (
-              <p className="py-8 text-sm text-muted-foreground">{t.empty}</p>
+              <p className="p-6 text-xs text-muted-foreground">{t.empty}</p>
             )}
           </div>
         </section>
+        <section className="rounded-lg border bg-card">
+          <h2 className="border-b px-4 py-3 text-sm font-semibold">
+            {t.recent}
+          </h2>
+          <div className="divide-y">
+            {data.activities.slice(0, 6).map((a) => (
+              <div
+                key={a.id}
+                className="flex justify-between gap-3 px-4 py-4 text-xs"
+              >
+                <span>{activityLabel(a.action, language)}</span>
+                <time className="text-[10px] text-muted-foreground">
+                  {new Date(a.created_at).toLocaleDateString(
+                    tr ? "tr-TR" : "en-GB",
+                  )}
+                </time>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
-      <section className="mt-7 rounded-2xl border bg-card p-6">
-        <h2 className="text-lg font-semibold">{t.recent}</h2>
-        <div className="mt-4 divide-y">
-          {data.activities.slice(0, 6).map((a) => (
-            <div
-              key={a.id}
-              className="flex flex-wrap justify-between gap-2 py-3 text-sm"
-            >
-              <span>{activityLabel(a.action, language)}</span>
-              <time className="text-xs text-muted-foreground">
-                {new Date(a.created_at).toLocaleString(
-                  language === "tr" ? "tr-TR" : "en-GB",
-                )}
-              </time>
-            </div>
-          ))}
-          {!data.activities.length && (
-            <p className="text-sm text-muted-foreground">{t.empty}</p>
-          )}
-        </div>
-      </section>
     </>
   );
 }

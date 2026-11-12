@@ -1,90 +1,88 @@
-# Geliştirme ve doğrulama raporu — 12 Kasım 2026
+# Doğrulama raporu — Inbox redesign, 12 Kasım 2026
 
-Mevcut Aşama 1 dosyaları korunarak Aşama 2–5'in MVP kodu geliştirildi.
-Proje sıfırlanmadı. Gerçek müşteriye mesaj gönderilmedi, ücretli API çağrısı
-ve canlı dağıtım yapılmadı.
+Mevcut LeadPilot AI kodu genişletildi. Eski CRM, görevler, ayarlar, kullanıcı
+akışları ve legacy AI ekranı korundu. Proje sıfırdan oluşturulmadı. Ücretli servis
+çağrısı, müşteri mesajı gönderimi ve canlı dağıtım yapılmadı.
 
 ## Son doğrulama
 
-| Kontrol | Sonuç |
-| --- | --- |
-| `npm ci` (kilit dosyasından tekrar kurulum) | Geçti |
-| `npm run lint` (`--max-warnings 0`) | Geçti, 0 hata / 0 uyarı |
-| `npm run typecheck` | Geçti |
-| `npm test` | 6 dosya, **37 test geçti**, başarısız/skip yok |
-| `npm run build` | Geçti; istenen tüm sayfalar ve API rotaları üretildi |
-| Production Playwright | **8 test geçti**, başarısız/skip yok |
-| `npm audit --omit=dev` | 0 bildirilen üretim bağımlılığı açığı |
-| İstemci bundle kontrolü | OpenAI anahtar değişkeni/test anahtar işareti static bundle'da bulunmadı |
+| Kontrol                             | Sonuç                                                    |
+| ----------------------------------- | -------------------------------------------------------- |
+| `npm run lint` (`--max-warnings 0`) | Geçti; 0 hata, 0 uyarı                                   |
+| `npm run typecheck`                 | Geçti                                                    |
+| `npm test`                          | **10 dosya, 58 test geçti**; başarısız/skip yok          |
+| `npm run build`                     | Geçti; Inbox, Properties, Analytics ve Copilot API dahil |
+| Production Playwright               | **27 test geçti**; desktop, tablet, mobile               |
+| `npm audit --omit=dev`              | 0 bildirilen üretim bağımlılığı açığı                    |
 
-Node.js 24.22.1, npm 11.9.0. Tarayıcı testleri ortamda kurulu
-`/usr/bin/chromium` ile çalıştırıldı. E-posta/WhatsApp/OpenAI teslimatı yapılmadı.
-Npm, upstream ESLint 9 için deprecation bildirir; lint başarılıdır.
-Playwright çıktısındaki NO_COLOR/FORCE_COLOR uyarısı test sonucunu etkilemez.
+Node.js 24.22.1 / npm 11.9.0. Tarayıcı: kurulu Chromium.
+Playwright tablet/mobil viewport ve etkileşim emülasyonu yapar; gerçek bir
+Safari/iOS cihaz testi yapıldığı iddia edilmez. E2E sunucusu varsayılan 3100
+portunu kullanır; geliştirme uygulamasını kapatmaz.
 
-## Test kapsamı
+## Yeni test kapsamı
 
-- Geçersiz çalışma modu ve kullanıcı girdisi reddi; istemci organization_id
-  enjeksiyonunun reddi; body byte sınırı ve same-origin kontrolü.
-- Sunucuda `getUser`, aktif tenant üyeliği ve rol kontrolü; kota DB hatasında
-  erişimin kapalı kalması; demo modunda remote storage'ın reddi.
-- Migration PGlite PostgreSQL motorunda çalıştırıldı. 10 tabloda RLS,
-  tenantlar arası SELECT/INSERT/UPDATE/DELETE, organization_id taşıma yasağı,
-  composite foreign key, sahte üyelik, owner koruması ve ekip e-posta gizliliği.
-- İşletme ilk oluşturmasının idempotency'si; DB rate limit; AI günlük kota;
-  lead silmenin tüketilmiş kotayı sıfırlamaması; lead ve organizasyon cascade silme.
-- AI structured output, eksik/ekstra alan ve aşırı uzun içerik reddi;
-  iletişim bilgisinin basit maskelenmesi; kaynaksız bütçe/konum ve yeni sayısal
-  iddiaların reddi; model refusal, truncated çıktı, timeout ve sağlayıcı hataları.
-- Çağrı öncesi kota rezervasyonu; geçersiz çıktıların kaydedilmemesi; aynı taslak
-  iki kere onaylandığında tek takip görevi oluşması. AI sağlayıcısı mock'landı.
-- Desktop/mobile landing tema ve dil; dilin yenileme/giriş sayfasında korunması; demo müşteri ekleme/düzenleme/arama;
-  düzenlenmiş AI taslağını onaylama ve oluşan görevi tamamlama.
-- Mobil menü ve Escape ile odak dönüşü; profil kaydı; sayfa geçişleri; yatay taşma;
-  demo giriş ekranının kimlik bilgisi toplamaması ve remote endpoint'in 409 dönmesi.
-- Dashboard ekran görüntüleri alındı ve masaüstü/mobil görsel inceleme yapıldı.
+- Kurucunun Çanakkale / 3 milyon TL / 2+1 / satılık daire / asansör / ara kat
+  örneğinin yapılandırılmış çıkarımı. Bilinen alanlar tekrar sorulmaz.
+- Sonraki gelen mesajların bütçe gibi önceki tercihleri güncellemesi; verilmiş
+  takvimin yeniden sorulmaması; bilinmeyen alanların null kalması.
+- Yalnızca kayıtlı/aktif ve tüm bilinen kriterleri karşılayan ilan eşleşmeleri.
+  Bütçe, para birimi, konum veya aktiflik uymuyorsa eşleşme üretilmemesi.
+- Eski sessionStorage kayıtları genişletilirken müşteri notlarının ve görevlerin
+  korunması; dönüştürmenin idempotent olması.
+- Yeni SQL migration'ının eski müşteri/mesaj kayıtlarını koruyup konuşmaya bağlaması.
+- Yeni lead için otomatik konuşma açılması. İki tenant arasında konuşma/ilan
+  erişimi, başka tenant'ın kullanıcısına atama ve sahte onay girişimlerinin reddi.
+- Onay RPC'sinin aynı request kimliğinde ikinci kayıt üretmemesi; mesaj durumunun
+  yalnızca `approved` olması; delivered durumunun oluşturulamaması.
+- Copilot kaydının geçerli rezervasyon ve son mesaj sürümüyle sınırlı olması.
+- Structured output, kaynakta olmayan bütçe/konum/sayı/URL ve modelin ek ilan
+  alanı üretmesinin reddi. Aşırı uzun bağlamın sessizce kırpılmadan reddi.
+- Mocked sağlayıcı ile quota öncesi çağrı yapılmaması, erişilemeyen konuşma için
+  provider çağrılmaması, refusal ve bozuk çıktının kaydedilmemesi.
+- Inbox'ta filtre/arama, klavye seçimi ve danışman atama; yenilemede korunması.
+- Desktop üç sütun, tablet drawer, mobil liste/sohbet geri dönüşü; yatay taşma yok.
+- Copilot taslağını düzenleme, inceleme kutusu olmadan onayın kapalı olması,
+  onay sonrası **Gönderilmedi** durumu.
+- İlan ekleme/pasife alma; yenilemede kayıtların korunması.
+- Inbox'tan ayrılmadan müşteri ekleme ve düzenleme; notların korunması.
+- Light/Dark/System; yenileme, OS renk değişimi ve sidebar daraltma tercihi.
+- Drawer Escape/focus dönüşü; landing ve auth dil tercihi; korunmuş legacy
+  CRM/AI/görev akışları; demo modunda remote persistence'ın 409 ile reddi.
 
-## Aşamalar ve dosyalar
+Açık/koyu tema ve mobil/tablet ekran görüntüleri alınıp incelendi. README'deki
+görüntüler demo verileridir. İlk turda bulunan drawer odak dönüşü, test sorgu
+kapsamları ve SQL doğrulama sözdizimi sorunları giderilip ilgili kontroller tekrar
+çalıştırıldı. Başarısız ilk denemeler başarılıymış gibi raporlanmaz; tablo son
+çalıştırmanın sonucudur.
 
-1. Mevcut Next.js, TypeScript, Tailwind ve shadcn temeli korundu. Runtime demo/live
-   seçimi ve tema tercih saklama davranışı geliştirildi.
-2. `src/components/landing.tsx`, `workspace-shell.tsx`, `form-fields.tsx`,
-   `auth-form.tsx`, `src/hooks/use-browser-language.ts`; `src/features/workspace/{dashboard,leads,tasks,assistant,settings,provider}.tsx`;
-   `src/app/(workspace)/*`, auth sayfaları; `src/lib/{domain,demo,i18n,activity}.ts`.
-   Demo akışları desktop/mobile testleriyle doğrulandı.
-3. `supabase/migrations/202611120001_initial.sql`, `src/lib/server/*`,
-   `src/app/api/{workspace,auth}/route.ts`, `src/app/auth/callback/route.ts`,
-   `src/app/actions.ts`, `.env.example`, `src/lib/env.ts`.
-   SQL/RLS ve sunucu yetkilendirme testleri geçti.
-4. `src/lib/ai.ts`, `src/app/api/ai/route.ts` ve ilgili AI testleri.
-   Ücret oluşturmayan mocked sağlayıcı testleri geçti.
-5. `src/lib/*.test.ts`, `src/lib/server/security.test.ts`,
-   `src/app/api/ai/route.test.ts`, `tests/foundation.spec.ts`, test yapılandırmaları,
-   `next.config.ts`, `.nvmrc`, README ve deployment/mimari rehberleri.
-   Son lint/typecheck/test/build/production E2E kontrolleri geçti.
+## Değişiklik grupları
 
-## Gerçek bağlantı gerektiren ve çalıştırılmayan kontroller
+- Tasarım: `src/app/globals.css`, layout, ThemeProvider, ThemeToggle,
+  WorkspaceShell, Drawer, Inter ve next-themes bağımlılıkları.
+- Inbox: `src/features/inbox/*`, `src/app/(workspace)/inbox`, properties ve
+  analytics rotaları. CRM müşteri detayından ilgili Inbox konuşmasına bağlantı.
+- Veriler: `src/lib/inbox-domain.ts`, `inbox.ts`, mevcut domain/provider
+  genişlemesi; demo sürümleme ve veri koruma.
+- Backend: `202611120002_communication_workspace.sql`, workspace API genişlemesi,
+  Copilot API, kaynak kontrolü ve korunmuş auth callback/giriş yönlendirmesi.
+- Doğrulama: yeni Inbox/Copilot/communication testleri, eski testlerin yeni tema
+  ve navigasyona uyarlanması; README, deployment ve tasarım belgeleri.
 
-Bu ortamda Supabase URL/publishable key, OpenAI API key ve SMTP bağlantısı yoktur.
-Canlı Supabase Auth/e-posta doğrulama ve parola recovery, uzaktaki DB migration'ı,
-gerçek Auth JWT'leriyle Cloud RLS, gerçek OpenAI çıktıları ve Vercel dağıtımı
-**çalıştırılmadı**. Bunlar başarılı olarak raporlanmaz.
+## Gerçek servis sınırı
 
-PGlite, PostgreSQL motorunun SQL/RLS davranışını test eder; Supabase Cloud Auth,
-PostgREST, SMTP, yedekleme veya dağıtık üretim yük testi değildir. Canlı servis
-bağlantılarını kurduktan sonra deployment rehberindeki iki kullanıcı/iki tenant
-kontrolleri ayrıca yapılmalıdır. Gerçek OpenAI kullanımı kurucu izni gerektirir.
+Bu ortamda Supabase/OpenAI anahtarları ve gerçek mesaj kanalı bağlantısı yoktur.
+Gerçek Supabase Cloud Auth/PostgREST/RLS, SMTP, OpenAI model kalitesi ve Vercel
+çalıştırılmadı. SQL testleri PGlite PostgreSQL motorunda `auth.users`/`auth.uid()`
+fixture'larıyla yapılır; Cloud hizmetinin doğrulandığı anlamına gelmez.
+OpenAI HTTP testleri mock kullanır; ücret oluşturmaz.
 
-WhatsApp, SMS veya müşteri e-postası gönderim entegrasyonu yoktur. Demo AI sabit
-örnektir; ödeme/abonelik tahsilatı ve otomatik purge scheduler bu MVP'de yoktur.
-Liste ekranları 1.000 kayda sınırlıdır; gerçek metrikler tüm kayıtları sayar ve
-sınır arayüzde bildirilir. Büyük tenantlarda sunucu sayfalaması gerekir.
+Canlı veri için ikinci migration ayrıca uygulanmalıdır; demo migration veya
+anahtar gerektirmez. WhatsApp/SMS/müşteri e-postası teslimatı entegrasyonu yoktur.
+Geliştirme çıktısı test edilmiş yerel MVP'dir; tüm servisleri bağlanmış ve
+üretimde yük testinden geçirilmiş küresel SaaS olarak sunulmaz.
 
-## Bulut ortamı
-
-Tekrarlanabilir `install_script` ve `start_skill` taslak olarak kaydedildi.
-Taslak kaydı komutları otomatik çalıştırmaz veya uygulamayı yayımlamaz. Bu makinede
-kurulum/test/build ayrıca çalıştırıldı. Yeni görevde snapshot restorasyonu ve
-ortam yayını henüz doğrulanmadı. Gelecek görevlerde kullanmak için ortam ayarlarında
-taslağı gözden geçirip kaydedin, ardından bulut ortamını Publish ile yayımlayın;
-bu işlem uygulamayı Vercel'de canlıya almakla aynı değildir.
+MVP liste ve bağlam sınırları [Inbox belgesinde](inbox-redesign.md) ve gerçek
+servis bağlantısı adımları [yayın rehberinde](deployment.md) açıklanır.
+İlk MVP'nin 37 birim/entegrasyon ve 8 tarayıcı testi bu genişlemede korunup
+58 ve 27 testlik kapsama dahil edilmiştir.

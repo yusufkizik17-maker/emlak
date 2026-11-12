@@ -16,6 +16,10 @@ export async function GET(request: Request) {
     const { db, user, organizationId: org, role } = await context("read");
     const exporting = new URL(request.url).searchParams.get("export") === "1";
     if (exporting) requireManager(role);
+    const today = new Date(Date.now() + 3 * 3600000).toISOString().slice(0, 10);
+    const dayStart = new Date(
+      Date.parse(`${today}T00:00:00Z`) - 3 * 3600000,
+    ).toISOString();
     const queries = await Promise.all([
       db
         .from("leads")
@@ -75,6 +79,54 @@ export async function GET(request: Request) {
         .select("id", { count: "exact", head: true })
         .eq("organization_id", org)
         .eq("completed", true),
+      db
+        .from("conversations")
+        .select(
+          "id,lead_id,assignee_id,unread_count,awaiting_reply,state,updated_at,analysis",
+        )
+        .eq("organization_id", org)
+        .order("updated_at", { ascending: false })
+        .limit(1000),
+      db
+        .from("lead_messages")
+        .select("id,lead_id,conversation_id,content,direction,state,created_at")
+        .eq("organization_id", org)
+        .order("created_at", { ascending: false })
+        .limit(1000),
+      db
+        .from("properties")
+        .select(
+          "id,title,city,district,price,currency,rooms,property_type,listing_type,elevator,floor,active",
+        )
+        .eq("organization_id", org)
+        .order("created_at", { ascending: false })
+        .limit(1000),
+      db
+        .from("lead_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", org)
+        .eq("direction", "inbound")
+        .gte("created_at", dayStart),
+      db
+        .from("conversations")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", org)
+        .eq("awaiting_reply", true)
+        .eq("state", "open"),
+      db
+        .from("conversations")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", org)
+        .not("analysis", "is", null),
+      db
+        .from("ai_suggestions")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", org),
+      db
+        .from("leads")
+        .select("id,tasks!inner(id)", { count: "exact", head: true })
+        .eq("organization_id", org)
+        .eq("tasks.completed", false),
     ]);
     const values = queries.map((q) => result<unknown>(q));
     const payload = workspaceSchema.parse({
@@ -87,6 +139,17 @@ export async function GET(request: Request) {
       memberships: values[6],
       members: values[7],
       role,
+      inbox_version: 1,
+      communication_metrics: {
+        today: queries[15].count || 0,
+        waiting: queries[16].count || 0,
+        drafts: (queries[17].count || 0) + (queries[18].count || 0),
+        new_leads: queries[9].count || 0,
+        follow_up: queries[19].count || 0,
+      },
+      conversations: values[12],
+      messages: values[13],
+      properties: values[14],
       metrics: {
         total: queries[8].count || 0,
         fresh: queries[9].count || 0,
@@ -105,6 +168,8 @@ export async function GET(request: Request) {
         "lead_messages",
         "ai_suggestions",
         "audit_logs",
+        "conversations",
+        "properties",
       ] as const;
       const records: Record<string, unknown[]> = {};
       for (const table of tables) {
@@ -142,6 +207,73 @@ export async function POST(request: Request) {
     const input = mutationSchema.parse(await readJson(request));
     const { db, user, organizationId: org, role } = await context("write");
     switch (input.action) {
+      case "conversation.read":
+        result(
+          await db
+            .from("conversations")
+            .update({ unread_count: 0 })
+            .eq("organization_id", org)
+            .eq("id", input.id),
+        );
+        break;
+      case "conversation.assign": {
+        if (input.user_id) {
+          const member = result(
+            await db
+              .from("memberships")
+              .select("user_id")
+              .eq("organization_id", org)
+              .eq("user_id", input.user_id)
+              .maybeSingle(),
+          );
+          if (!member) throw new HttpError(403, "assignee_not_member");
+        }
+        result(
+          await db
+            .from("conversations")
+            .update({ assignee_id: input.user_id })
+            .eq("organization_id", org)
+            .eq("id", input.id),
+        );
+        break;
+      }
+      case "conversation.state":
+        result(
+          await db
+            .from("conversations")
+            .update({ state: input.state })
+            .eq("organization_id", org)
+            .eq("id", input.id),
+        );
+        break;
+      case "message.approve":
+        result(
+          await db.rpc("record_approved_reply", {
+            p_org: org,
+            p_conversation: input.id,
+            p_content: input.content,
+            p_request: input.request_id,
+          }),
+        );
+        break;
+      case "message.receive":
+        throw new HttpError(409, "demo_action_only");
+      case "property.create":
+        result(
+          await db
+            .from("properties")
+            .insert({ ...input.data, organization_id: org }),
+        );
+        break;
+      case "property.toggle":
+        result(
+          await db
+            .from("properties")
+            .update({ active: input.active })
+            .eq("organization_id", org)
+            .eq("id", input.id),
+        );
+        break;
       case "lead.create":
         result(
           await db

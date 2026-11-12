@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       url.searchParams.get("next") === "reset" ||
       (type.success && type.data === "recovery")
         ? "/reset-password"
-        : "/dashboard";
+        : "/inbox";
     return Response.redirect(new URL(destination, siteOrigin()), 303);
   } catch (e) {
     return errorResponse(e);

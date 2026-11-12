@@ -56,7 +56,7 @@ export function AuthForm({
                   : "Demo mode does not create accounts or collect credentials. Explore the sample workspace directly."}
               </p>
               <Button asChild className="w-full">
-                <Link href="/dashboard">
+                <Link href="/inbox">
                   {tr ? "Demoya devam et" : "Continue to demo"}
                 </Link>
               </Button>
@@ -84,7 +84,7 @@ export function AuthForm({
                   });
                   if (!r.ok) throw new Error();
                   if (kind === "login") {
-                    router.push("/dashboard");
+                    router.push("/inbox");
                     router.refresh();
                   } else setSuccess(true);
                 } catch {

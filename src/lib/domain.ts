@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  conversationSchema,
+  messageSchema,
+  propertySchema,
+  inboxMutations,
+} from "./inbox-domain";
 export const statuses = [
   "new",
   "contacted",
@@ -68,6 +74,19 @@ export type Suggestion = {
   created_at: string;
 };
 export const workspaceSchema = z.object({
+  inbox_version: z.number().default(0),
+  communication_metrics: z
+    .object({
+      today: z.number(),
+      waiting: z.number(),
+      drafts: z.number(),
+      new_leads: z.number(),
+      follow_up: z.number(),
+    })
+    .optional(),
+  conversations: z.array(conversationSchema).default([]),
+  messages: z.array(messageSchema).default([]),
+  properties: z.array(propertySchema).default([]),
   leads: z.array(leadInput.extend({ id: z.uuid(), created_at: z.string() })),
   tasks: z.array(taskInput.extend({ id: z.uuid(), created_at: z.string() })),
   suggestions: z.array(
@@ -116,6 +135,7 @@ export const workspaceSchema = z.object({
 });
 export type WorkspaceData = z.infer<typeof workspaceSchema>;
 export const mutationSchema = z.discriminatedUnion("action", [
+  ...inboxMutations,
   z.object({ action: z.literal("lead.create"), data: leadInput }).strict(),
   z
     .object({ action: z.literal("lead.update"), id: z.uuid(), data: leadInput })

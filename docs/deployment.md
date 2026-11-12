@@ -11,6 +11,8 @@ kontrolünde yapılmalıdır. Gerçek anahtarları sohbete veya Git'e yazmayın.
    `service_role` anahtarı bu uygulama için gerekmez ve kullanılmamalıdır.
 2. Boş bir geliştirme veritabanında önce
    `supabase/migrations/202611120001_initial.sql` migration'ını çalıştırın.
+   Ardından `202611120002_communication_workspace.sql` migration'ını çalıştırın.
+   Önceden ilk migration uygulanmış projede yalnızca ikinci migration uygulanır.
    SQL Editor veya kendi yetkinizle kurduğunuz Supabase CLI kullanılabilir.
    Migration tek transaction'dır; var olan üretim tablolarının üzerine çalıştırmayın.
 3. Auth > URL Configuration: gerçek `APP_URL` için Site URL ve
@@ -55,8 +57,7 @@ on conflict (id) do nothing;
 1. `OPENAI_API_KEY` değerini sadece sunucu ortamına ekleyin.
    `OPENAI_MODEL=gpt-4.1-mini` veya `gpt-4.1-nano` desteklenir. Yeni bir model
    eklemek ayrı değerlendirme ve test gerektirir; istemci model seçemez.
-2. OpenAI proje bütçesi ve uyarılarını ayrıca yapılandırın. Uygulama 4.000 karakter
-   girdi, 1.200 maksimum çıktı token'ı ve her işletme için UTC günde 20, ayda 100
+2. OpenAI proje bütçesi ve uyarılarını ayrıca yapılandırın. Uygulama legacy analizde 4.000 karakter/1.200 çıktı token'ı, Copilot'ta 8.000 karakter/1.600 çıktı token'ı ve her işletme için UTC günde 20, ayda 100
    rezervasyon sınırı uygular. Başarısız çağrılar da kota tüketir; otomatik retry yoktur.
    Eşzamanlı istekler PostgreSQL advisory lock ile aynı kotayı paylaşır.
    Kota kayıtları müşteri silindiğinde korunur; silme ile maliyet sınırı aşılamaz.
@@ -95,7 +96,7 @@ on conflict (id) do nothing;
 - CSP üretimde eval'i kapatır; Next.js bootstrap için inline script izni vardır.
   Daha sıkı nonce tabanlı CSP ileride ayrı bir iyileştirmedir. HTTPS yönlendirme ve
   HSTS hedef platformun domain ayarlarında doğrulanmalıdır.
-- Liste ekranları MVP'de 1.000 lead/task ve son 100 AI önerisiyle sınırlandırılır;
+- Liste ekranları MVP'de 1.000 lead/task/conversation/property, son 1.000 mesaj ve 100 legacy AI önerisiyle sınırlandırılır;
   bu durum arayüzde belirtilir. Dashboard metrikleri tüm kayıtlar için DB count
   kullanır. Dışa aktarım sayfalı olarak tüm kayıtları okur; 50.000 kayıtta açık hata
   verir. Daha büyük tenantlar için sunucu taraflı sayfalama ve dışa aktarım işi gerekir.
@@ -115,3 +116,9 @@ on conflict (id) do nothing;
 - Şekil doğrulama, kaynak metne dayalı alan kontrolü ve sayı/URL kısıtları prompt
   injection riskini azaltır; LLM'nin tüm doğal dil iddialarının doğru olduğunu
   matematiksel olarak garanti etmez. İnsan onayı zorunludur ve gönderim kanalı yoktur.
+
+Inbox genişlemesi ile kullanıcı giriş sonrası `/inbox` ekranına yönlendirilir.
+Mesaj onayı `approved` durumunda iç kayıt oluşturur; gönderim kuyruğu, webhook,
+WhatsApp veya SMTP müşteri teslimatı yoktur. Auth e-postaları bu sınırdan ayrı
+olarak Supabase Auth akışının parçasıdır. Demo için ikinci migration veya herhangi
+bir anahtar gerekmez. [Yeni akış ve sınırlar](inbox-redesign.md).

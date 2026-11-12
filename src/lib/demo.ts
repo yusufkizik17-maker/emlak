@@ -1,6 +1,10 @@
 import type { Analysis, WorkspaceData } from "./domain";
 const stamp = "2026-11-12T08:00:00.000Z";
 export const demoData: WorkspaceData = {
+  inbox_version: 0,
+  conversations: [],
+  messages: [],
+  properties: [],
   organization: {
     id: "00000000-0000-4000-8000-000000000001",
     name: "Nova Emlak",

@@ -2,36 +2,52 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f8f9fd;
-  --foreground: #14203b;
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --primary: #6543d5;
+  --primary: #6d5cff;
   --primary-foreground: #ffffff;
-  --secondary: #f0eef9;
-  --secondary-foreground: #30274d;
-  --muted-foreground: #5c6578;
-  --accent: #eae5fa;
-  --accent-foreground: #342162;
-  --border: #e1e4ee;
-  --input: #e1e4ee;
-  --ring: #8062df;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #6d5cff;
   --destructive: #b3263c;
+  --destructive-foreground: #ffffff;
+  --success: #15803d;
+  --success-subtle: #f0fdf4;
+  --warning: #a16207;
+  --warning-subtle: #fefce8;
+  --incoming: #f1f5f9;
+  --outgoing: #edebff;
+  --overlay: rgb(15 23 42 / 0.42);
 }
 .dark {
-  --background: #0c1221;
-  --foreground: #edf0fc;
-  --card: #141e32;
-  --primary: #ad97ff;
-  --primary-foreground: #21113d;
-  --secondary: #202940;
-  --secondary-foreground: #e5dffa;
-  --muted-foreground: #a8b3c9;
-  --accent: #2d2a4c;
-  --accent-foreground: #eee8ff;
-  --border: #303a51;
-  --input: #303a51;
-  --ring: #ad97ff;
+  --background: #0b1120;
+  --foreground: #f8fafc;
+  --card: #151e30;
+  --primary: #8b7cff;
+  --primary-foreground: #0b1120;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --border: #334155;
+  --input: #334155;
+  --ring: #8b7cff;
   --destructive: #ff8898;
+  --destructive-foreground: #0b1120;
+  --success: #86efac;
+  --success-subtle: #14372b;
+  --warning: #fde047;
+  --warning-subtle: #3d321c;
+  --incoming: #1e293b;
+  --outgoing: #2a2750;
+  --overlay: rgb(0 0 0 / 0.6);
 }
 @theme inline {
   --color-background: var(--background);
@@ -48,7 +64,15 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-destructive: var(--destructive);
-  --font-sans: Arial, Helvetica, sans-serif;
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-incoming: var(--incoming);
+  --color-outgoing: var(--outgoing);
+  --color-overlay: var(--overlay);
+  --font-sans: "Inter Variable", Inter, system-ui, sans-serif;
 }
 * {
   border-color: var(--border);
@@ -56,7 +80,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter Variable", Inter, system-ui, sans-serif;
 }
 :focus-visible {
   outline: 3px solid var(--ring);
@@ -85,4 +109,50 @@ select {
 }
 textarea {
   resize: vertical;
+}
+
+/* Dense workspace surfaces; shared tokens keep legacy screens coherent. */
+.workspace .rounded-2xl,
+.workspace .rounded-xl {
+  border-radius: 0.5rem;
+}
+.workspace input,
+.workspace textarea,
+.workspace select {
+  font-size: 0.8125rem;
+}
+.workspace table th,
+.workspace table td {
+  padding: 0.875rem 1rem;
+}
+.workspace h1 {
+  letter-spacing: -0.035em;
+}
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+.skeleton {
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .workspace .text-\[9px\],
+  .workspace .text-\[10px\] {
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
+  .workspace .text-\[11px\] {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+  .workspace label:has(input[type="checkbox"]) {
+    min-height: 2rem;
+  }
 }

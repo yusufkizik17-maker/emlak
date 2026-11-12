@@ -7,6 +7,8 @@ import {
   useEffect,
   useState,
 } from "react";
+import { upgradeDemo, demoCopilot } from "@/lib/inbox";
+import { copilotSchema } from "@/lib/inbox-domain";
 import { demoData, demoAnalysis } from "@/lib/demo";
 import {
   analysisSchema,
@@ -26,6 +28,7 @@ type ContextValue = {
   error: string;
   notice: string;
   mutate: (input: Mutation) => Promise<void>;
+  copilot: (conversationId: string) => Promise<void>;
   analyze: (lead_id: string, message: string) => Promise<void>;
   setLanguage: (language: Language) => void;
   reset: () => void;
@@ -40,10 +43,14 @@ export function WorkspaceProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [data, setData] = useState<WorkspaceData>(
+  const [data, setData] = useState<WorkspaceData>(() =>
     mode === "demo"
-      ? structuredClone(demoData)
+      ? upgradeDemo(structuredClone(demoData))
       : {
+          inbox_version: 1,
+          conversations: [],
+          messages: [],
+          properties: [],
           role: "member",
           leads: [],
           tasks: [],
@@ -94,7 +101,7 @@ export function WorkspaceProvider({
         if (mode === "demo") {
           const saved = sessionStorage.getItem(storageKey);
           if (saved) {
-            const next = workspaceSchema.parse(JSON.parse(saved));
+            const next = upgradeDemo(workspaceSchema.parse(JSON.parse(saved)));
             if (
               Array.isArray(next.leads) &&
               Array.isArray(next.tasks) &&
@@ -152,6 +159,16 @@ export function WorkspaceProvider({
           switch (change.action) {
             case "lead.create":
               next.leads.unshift({ ...change.data, id, created_at: now });
+              next.conversations.unshift({
+                id,
+                lead_id: id,
+                assignee_id: null,
+                unread_count: 0,
+                awaiting_reply: false,
+                state: "open",
+                updated_at: now,
+                analysis: null,
+              });
               break;
             case "lead.update":
               next.leads = next.leads.map((lead) =>
@@ -165,6 +182,70 @@ export function WorkspaceProvider({
               );
               next.suggestions = next.suggestions.filter(
                 (s) => s.lead_id !== change.id,
+              );
+              next.conversations = next.conversations.filter(
+                (c) => c.lead_id !== change.id,
+              );
+              next.messages = next.messages.filter(
+                (m) => m.lead_id !== change.id,
+              );
+              break;
+            case "conversation.read": {
+              const c = next.conversations.find((c) => c.id === change.id);
+              if (c) c.unread_count = 0;
+              break;
+            }
+            case "conversation.assign": {
+              const c = next.conversations.find((c) => c.id === change.id);
+              if (c) c.assignee_id = change.user_id;
+              break;
+            }
+            case "conversation.state": {
+              const c = next.conversations.find((c) => c.id === change.id);
+              if (c) c.state = change.state;
+              break;
+            }
+            case "message.approve": {
+              const c = next.conversations.find((c) => c.id === change.id);
+              if (c && !next.messages.some((m) => m.id === change.request_id)) {
+                next.messages.push({
+                  id: change.request_id,
+                  lead_id: c.lead_id,
+                  conversation_id: c.id,
+                  content: change.content,
+                  direction: "outbound",
+                  state: "approved",
+                  created_at: now,
+                });
+                c.awaiting_reply = false;
+                c.updated_at = now;
+              }
+              break;
+            }
+            case "message.receive": {
+              const c = next.conversations.find((c) => c.id === change.id);
+              if (c) {
+                next.messages.push({
+                  id,
+                  lead_id: c.lead_id,
+                  conversation_id: c.id,
+                  content: change.content,
+                  direction: "inbound",
+                  state: "received",
+                  created_at: now,
+                });
+                c.awaiting_reply = true;
+                c.analysis = null;
+                c.updated_at = now;
+              }
+              break;
+            }
+            case "property.create":
+              next.properties.unshift({ ...change.data, id });
+              break;
+            case "property.toggle":
+              next.properties = next.properties.map((p) =>
+                p.id === change.id ? { ...p, active: change.active } : p,
               );
               break;
             case "task.create":
@@ -221,6 +302,12 @@ export function WorkspaceProvider({
                   .map((l) => l.id),
               );
               next.leads = next.leads.filter((l) => !expired.has(l.id));
+              next.conversations = next.conversations.filter(
+                (c) => !expired.has(c.lead_id),
+              );
+              next.messages = next.messages.filter(
+                (m) => !expired.has(m.lead_id),
+              );
               next.tasks = next.tasks.filter(
                 (v) => !v.lead_id || !expired.has(v.lead_id),
               );
@@ -230,15 +317,16 @@ export function WorkspaceProvider({
               break;
             }
           }
-          next.activities.unshift({
-            id: crypto.randomUUID(),
-            action: change.action,
-            created_at: now,
-          });
+          if (change.action !== "conversation.read")
+            next.activities.unshift({
+              id: crypto.randomUUID(),
+              action: change.action,
+              created_at: now,
+            });
           return next;
         });
       }
-      setNotice(t.saved);
+      if (change.action !== "conversation.read") setNotice(t.saved);
     } catch {
       setError(t.error);
       throw new Error("Operation failed");
@@ -282,6 +370,39 @@ export function WorkspaceProvider({
       );
     }
   }
+  async function copilot(conversationId: string) {
+    setError("");
+    try {
+      if (mode === "demo") {
+        const source = data.messages
+          .filter(
+            (m) =>
+              m.conversation_id === conversationId && m.direction === "inbound",
+          )
+          .map((m) => m.content)
+          .join("\n");
+        if (!source.trim()) throw new Error("No incoming messages");
+        const analysis = copilotSchema.parse(demoCopilot(source, language));
+        setData((d) => ({
+          ...d,
+          conversations: d.conversations.map((c) =>
+            c.id === conversationId ? { ...c, analysis } : c,
+          ),
+        }));
+      } else {
+        const r = await fetch("/api/copilot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversation_id: conversationId, language }),
+        });
+        if (!r.ok) throw new Error("Copilot unavailable");
+        await refresh();
+      }
+    } catch {
+      setError(t.error);
+      throw new Error("Copilot unavailable");
+    }
+  }
   return (
     <Context.Provider
       value={{
@@ -294,9 +415,10 @@ export function WorkspaceProvider({
         notice,
         mutate,
         analyze,
+        copilot,
         setLanguage,
         reset: () => {
-          setData(structuredClone(demoData));
+          setData(upgradeDemo(structuredClone(demoData)));
         },
         dismiss: () => {
           setError("");

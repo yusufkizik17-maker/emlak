@@ -201,7 +201,7 @@ function LeadList({
                   </td>
                   <td className="px-5 py-5">
                     <span
-                      className={`rounded-full px-2.5 py-1 text-xs ${l.status === "won" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-primary/10 text-primary"}`}
+                      className={`rounded-full px-2.5 py-1 text-xs ${l.status === "won" ? "bg-success-subtle text-success" : "bg-primary/10 text-primary"}`}
                     >
                       {t[l.status]}
                     </span>
@@ -286,7 +286,7 @@ export function LeadDetails({ id }: { id: string }) {
             </dl>
             <div className="mt-7 flex flex-wrap gap-3">
               <Button asChild>
-                <Link href={`/ai-assistant?lead=${id}`}>{t.ai}</Link>
+                <Link href={`/inbox?lead=${id}`}>{t.ai}</Link>
               </Button>
               <Button
                 variant="destructive"
